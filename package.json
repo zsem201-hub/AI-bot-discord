@@ -1,28 +1,84 @@
 {
-"name": "discord-ai-bot",
-"version": "1.0.0",
-"description": "Powerful Discord AI Bot with multiple providers and skills",
-"main": "src/index.js",
-"scripts": {
-"start": "node src/index.js",
-"dev": "nodemon src/index.js",
-"test": "echo \"No tests yet\""
-},
-"dependencies": {
-"discord.js": "^14.14.1",
-"@google/generative-ai": "^0.1.3",
-"groq-sdk": "^0.1.0",
-"axios": "^1.6.0",
-"dotenv": "^16.3.1",
-"better-sqlite3": "^9.2.2"
-},
-"devDependencies": {
-"nodemon": "^3.0.2"
-},
-"engines": {
-"node": ">=18.0.0"
-},
-"keywords": ["discord", "bot", "ai", "chatbot", "gemini", "groq"],
-"author": "Your Name",
-"license": "MIT"
+  "name": "discord-ai-bot",
+  "version": "2.0.0",
+  "description": "Powerful Discord AI Bot with Multi-Model, Music, TTS, and 20+ Skills",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js",
+    "pm2": "pm2 start src/index.js --name ai-bot",
+    "pm2:restart": "pm2 restart ai-bot",
+    "pm2:stop": "pm2 stop ai-bot",
+    "pm2:logs": "pm2 logs ai-bot",
+    "pm2:monit": "pm2 monit",
+    "setup": "node scripts/setup.js",
+    "update": "git pull && npm install && pm2 restart ai-bot",
+    "clean": "node scripts/cleanup.js",
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "ai",
+    "chatbot",
+    "music",
+    "lavalink",
+    "tts",
+    "gemini",
+    "groq",
+    "openrouter"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zsem201-hub/AI-bot-discord"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "@discordjs/voice": "^0.17.0",
+    "@discordjs/opus": "^0.9.0",
+    "sodium-native": "^4.0.4",
+    "prism-media": "^1.3.5",
+    "ffmpeg-static": "^5.2.0",
+    
+    "shoukaku": "^4.1.0",
+    "kazagumo": "^3.4.0",
+    
+    "@google/generative-ai": "^0.21.0",
+    "groq-sdk": "^0.8.0",
+    "openai": "^4.67.0",
+    "@anthropic-ai/sdk": "^0.30.0",
+    
+    "axios": "^1.7.7",
+    "dotenv": "^16.4.5",
+    "better-sqlite3": "^11.3.0",
+    "ioredis": "^5.4.1",
+    
+    "sharp": "^0.33.5",
+    "canvas": "^2.11.2",
+    "node-html-to-image": "^4.0.0",
+    
+    "express": "^4.21.0",
+    "bull": "^4.16.0",
+    "uuid": "^10.0.0",
+    "ms": "^2.1.3",
+    "moment": "^2.30.1",
+    "moment-timezone": "^0.5.45",
+    "mathjs": "^13.1.1",
+    "cheerio": "^1.0.0",
+    "html-entities": "^2.5.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  },
+  "optionalDependencies": {
+    "bufferutil": "^4.0.8",
+    "utf-8-validate": "^6.0.4",
+    "zlib-sync": "^0.1.9",
+    "erlpack": "github:discord/erlpack"
+  }
 }
