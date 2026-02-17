@@ -1,130 +1,79 @@
-// ==================== CONTEXT MANAGER ====================
-// Manages conversation history and context windows
-
+// ==================== CONTEXT MANAGER (MULTI-USER SUPPORT) ====================
 const logger = require('../services/logger');
-const db = require('../services/database');
 
 class ContextManager {
     constructor() {
-        // In-memory cache for fast access
-        this.cache = new Map();
-        this.maxContextMessages = 50; // Max messages to keep in memory
-        this.maxContextLength = 32000; // Max characters in context
+        this.conversations = new Map();
+        this.channelConversations = new Map(); // For bypass channels (multi-user)
+        this.maxMessages = 30;
+        this.maxChannelMessages = 50; // More for multi-user
     }
 
-    /**
-     * Get conversation context
-     */
-    async get(userId, channelId, limit = null) {
-        const key = this.getKey(userId, channelId);
-        
-        // Try cache first
-        if (this.cache.has(key)) {
-            const context = this.cache.get(key);
-            return limit ? context.slice(-limit) : context;
-        }
-
-        // Load from database
-        const context = await db.getConversationHistory(userId, channelId, limit || this.maxContextMessages);
-        this.cache.set(key, context);
-        
-        return context;
-    }
-
-    /**
-     * Add message to context
-     */
-    async add(userId, channelId, message) {
-        const key = this.getKey(userId, channelId);
-        
-        // Get current context
-        let context = await this.get(userId, channelId);
-        
-        // Add new message
-        context.push({
-            role: message.role,
-            content: message.content,
-            timestamp: Date.now()
-        });
-
-        // Trim if too long
-        context = this.trimContext(context);
-
-        // Update cache
-        this.cache.set(key, context);
-
-        // Save to database (async, don't wait)
-        db.saveMessage(userId, channelId, message).catch(err => {
-            logger.error(`Failed to save message: ${err.message}`);
-        });
-    }
-
-    /**
-     * Clear conversation context
-     */
-    async clear(userId, channelId) {
-        const key = this.getKey(userId, channelId);
-        this.cache.delete(key);
-        await db.clearConversation(userId, channelId);
-    }
-
-    /**
-     * Get context summary
-     */
-    async getSummary(userId, channelId) {
-        const context = await this.get(userId, channelId);
-        
-        const summary = {
-            messageCount: context.length,
-            userMessages: context.filter(m => m.role === 'user').length,
-            assistantMessages: context.filter(m => m.role === 'assistant').length,
-            totalCharacters: context.reduce((sum, m) => sum + m.content.length, 0),
-            oldestMessage: context[0]?.timestamp,
-            newestMessage: context[context.length - 1]?.timestamp
-        };
-
-        return summary;
-    }
-
-    /**
-     * Trim context to fit limits
-     */
-    trimContext(context) {
-        // First, trim by message count
-        if (context.length > this.maxContextMessages) {
-            context = context.slice(-this.maxContextMessages);
-        }
-
-        // Then, trim by character count
-        let totalLength = context.reduce((sum, m) => sum + m.content.length, 0);
-        
-        while (totalLength > this.maxContextLength && context.length > 1) {
-            const removed = context.shift();
-            totalLength -= removed.content.length;
-        }
-
-        return context;
-    }
-
-    /**
-     * Generate cache key
-     */
+    // Single user context (DM or mention)
     getKey(userId, channelId) {
         return `${userId}:${channelId}`;
     }
 
-    /**
-     * Clear all cache
-     */
-    clearCache() {
-        this.cache.clear();
+    get(userId, channelId, limit = null) {
+        const key = this.getKey(userId, channelId);
+        const context = this.conversations.get(key) || [];
+        return limit ? context.slice(-limit) : context;
     }
 
-    /**
-     * Get cache size
-     */
-    getCacheSize() {
-        return this.cache.size;
+    add(userId, channelId, message) {
+        const key = this.getKey(userId, channelId);
+        let context = this.conversations.get(key) || [];
+        context.push({ role: message.role, content: message.content, timestamp: Date.now() });
+        if (context.length > this.maxMessages) context = context.slice(-this.maxMessages);
+        this.conversations.set(key, context);
+    }
+
+    clear(userId, channelId) {
+        const key = this.getKey(userId, channelId);
+        this.conversations.delete(key);
+    }
+
+    // Multi-user context for bypass channels
+    getChannelContext(channelId, limit = null) {
+        const context = this.channelConversations.get(channelId) || [];
+        return limit ? context.slice(-limit) : context;
+    }
+
+    addChannelMessage(channelId, username, content, isBot = false) {
+        let context = this.channelConversations.get(channelId) || [];
+        context.push({
+            role: isBot ? 'assistant' : 'user',
+            username: username,
+            content: isBot ? content : `[${username}]: ${content}`,
+            timestamp: Date.now()
+        });
+        if (context.length > this.maxChannelMessages) context = context.slice(-this.maxChannelMessages);
+        this.channelConversations.set(channelId, context);
+    }
+
+    clearChannel(channelId) {
+        this.channelConversations.delete(channelId);
+    }
+
+    // Build context for AI (multi-user format)
+    buildMultiUserContext(channelId) {
+        const context = this.getChannelContext(channelId);
+        return context.map(msg => ({
+            role: msg.role,
+            content: msg.content
+        }));
+    }
+
+    // Get recent participants in channel
+    getRecentParticipants(channelId, limit = 5) {
+        const context = this.getChannelContext(channelId);
+        const users = new Set();
+        for (let i = context.length - 1; i >= 0 && users.size < limit; i--) {
+            if (context[i].username && context[i].role === 'user') {
+                users.add(context[i].username);
+            }
+        }
+        return Array.from(users);
     }
 }
 
