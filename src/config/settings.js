@@ -8,9 +8,9 @@ module.exports = {
     ownerId: process.env.OWNER_ID,
     ownerIds: (process.env.OWNER_IDS || process.env.OWNER_ID || '').split(',').filter(Boolean),
 
-    // AI Configuration - Default: Groq dengan Kimi K2
-    defaultProvider: process.env.DEFAULT_PROVIDER || 'groq',
-    defaultModel: process.env.DEFAULT_MODEL || 'moonshotai/kimi-k2-instruct-0905',
+    // AI Configuration - FORCE DEFAULT TO GROQ KIMI K2
+    defaultProvider: 'groq', 
+    defaultModel: 'moonshotai/kimi-k2-instruct-0905',
     maxContextMessages: parseInt(process.env.MAX_CONTEXT_MESSAGES) || 50,
     maxChannelContextMessages: parseInt(process.env.MAX_CHANNEL_CONTEXT_MESSAGES) || 100,
 
